@@ -1,17 +1,29 @@
 <script setup lang="ts">
 
-import { ref, watch } from 'vue';
-import request from '../libs/request';
+import { ref, watch, computed, reactive } from 'vue';
 import { ITodo } from '../types';
+import TodoService from '../services/todo';
 
-import { Button, message, Col, Row, } from 'ant-design-vue';
 
 defineProps<{ msg: string }>()
-const newTodoTitle = ref('');
-const pageNo = ref(1);
-const pageSize = ref(10);
+const state = reactive({
+  count: 0,
+  todos: [] as ITodo[],
+  newTodoTitle: '',
+  pageNo: 1,
+  pageSize: 10,
+  total: 0,
+});
 
-console.log(request.get<ITodo>("/todo?id=2"))
+const pageCount = computed(() => Math.ceil(state.total / state.pageSize));
+
+const getTodos = async () => {
+  const { data: { data } } = await TodoService.getTodos(state.pageNo, state.pageSize);
+  state.total = data.total;
+  state.todos = data.todos;
+};
+
+watch(() => [state.pageNo, state.pageSize], getTodos, { immediate: true });
 
 </script>
 
@@ -22,9 +34,10 @@ console.log(request.get<ITodo>("/todo?id=2"))
       <a-button class="primary-color name" type="link" href="/" size="large">Simple Todo</a-button>
     </div>
     <a-input-group compact class="input-row">
-      <a-input v-model:value="newTodoTitle" style="width: calc(100% - 200px)" />
+      <a-input v-model:value="state.newTodoTitle" style="width: calc(100% - 200px)" />
       <a-button type="primary" class="primary-bg-color">Submit</a-button>
     </a-input-group>
+    <p>{{ pageCount }}</p>
   </div>
 </template>
 
